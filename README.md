@@ -12,7 +12,7 @@ Ninja Physics is a physics plugin for Panda.js, which is inspired by [articles](
 
 The MIT License (MIT)
 
-Copyright (c) 2014 Sean Bohan
+Copyright (c) 2015 Sean Bohan
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
