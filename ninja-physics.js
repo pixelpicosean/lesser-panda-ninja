@@ -6,6 +6,93 @@ game.module(
 )
 .body(function() { 'use strict';
 
+    game.Vector.inject({
+        /**
+         * Change this vector to be perpendicular to what it was before. (Effectively
+         * roatates it 90 degrees in a clockwise direction)
+         * @return {game.Vector} This for chaining
+         */
+        perp: function() {
+            var x = this.x;
+            this.x = this.y;
+            this.y = -x;
+            return this;
+        },
+        /**
+         * Reverse this vector
+         * @return {game.Vector} This for chaining
+         */
+        reverse: function() {
+            this.x = -this.x;
+            this.y = -this.y;
+            return this;
+        },
+        /**
+         * Scale this vector. An independant scaling factor can be provided
+         * for each axis, or a single scaling factor that will scale both `x` and `y`.
+         * @param  {Number} x The scaling factor in the x direction
+         * @param  {Number} y The scaling factor in the y direction
+         * @return {game.Vector} This for chaining
+         */
+        scale: function(x, y) {
+            this.x *= x;
+            this.y *= y || x;
+            return this;
+        },
+        project: function(other) {
+            var amt = this.dot(other) / other.squaredLength();
+            this.x = amt * other.x;
+            this.y = amt * other.y;
+            return this;
+        },
+        /**
+         * Project this vector onto a vector of unit length. This is slightly more efficient
+         * than `project` when dealing with unit vectors.
+         * @param {game.Vector} other The unit vector to project onto
+         * @return {game.Vector} This for chaining
+         */
+        projectN: function(other) {
+            var amt = this.dot(other);
+            this.x = amt * other.x;
+            this.y = amt * other.y;
+            return this;
+        },
+        /**
+         * Reflect this vector on an arbitrary axis.
+         * @param {game.Vector} axis The vector representing the axis
+         * @return {game.Vector} This for chaining
+         */
+        reflect: function(axis) {
+            var x = this.x,
+                y = this.y;
+            this.project(axis).scale(2);
+            this.x -= x;
+            this.y -= y;
+            return this;
+        },
+        /**
+         * Reflect this vector on an arbitrary axis (represented by a unit vector). This is
+         * slightly more efficient than `reflect` when dealing with an axis that is a unit vector.
+         * @param {game.Vector} axis The unit vector representing the axis
+         * @return {game.Vector} This for chaining
+         */
+        reflectN: function(axis) {
+            var x = this.x,
+                y = this.y;
+            this.projectN(axis).scale(2);
+            this.x -= x;
+            this.y -= y;
+            return this;
+        },
+        /**
+         * Get the squared length of this vector.
+         * @return {Number} The length^2 of this vector
+         */
+        squaredLength: function() {
+            return this.dot();
+        }
+    });
+
     game.World.inject({
         /**
          * SpatialGrid for Broad-Phase Collision.
