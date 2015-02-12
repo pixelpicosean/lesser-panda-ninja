@@ -95,10 +95,10 @@ game.module(
 
     // TODO: finish polygon related methods
     game.createClass('Polygon', {
-        points: null,
-        calcPoints: null,
-        edges: null,
-        normals: null,
+        points: [],
+        calcPoints: [],
+        edges: [],
+        normals: [],
         offset: null,
         angle: 0,
         init: function(points) {
@@ -109,12 +109,11 @@ game.module(
             // Only re-allocate if this is a new polygon or the number of points has changed.
             var lengthChanged = !this.points || this.points.length !== points.length;
             if (lengthChanged) {
-                var i;
                 var calcPoints = this.calcPoints = [];
                 var edges = this.edges = [];
                 var normals = this.normals = [];
                 // Allocate the vector arrays for the calculated properties
-                for (i = 0; i < points.length; i++) {
+                for (var i = 0, len = points.length; i < len; i++) {
                     calcPoints.push(new game.Vector());
                     edges.push(new game.Vector());
                     normals.push(new game.Vector());
@@ -190,7 +189,7 @@ game.module(
 
     game.Rectangle.inject({
         toPolygon: function() {
-            return new game.Polygon(new game.Vector(), [
+            return new game.Polygon([
                 new game.Vector(), new game.Vector(this.width, 0),
                 new game.Vector(this.width, this.height), new game.Vector(0, this.height)
             ]);
@@ -204,7 +203,7 @@ game.module(
         overlapV: null,
         aInB: true,
         bInA: true,
-        overlap: 0,
+        overlap: Number.MAX_VALUE,
         init: function() {
             this.overlapN = new game.Vector();
             this.overlapV = new game.Vector();
@@ -212,9 +211,7 @@ game.module(
         clear: function() {
             this.aInB = true;
             this.bInA = true;
-            this.overlap = 0;
-            this.overlapN.set(0, 0);
-            this.overlapV.set(0, 0);
+            this.overlap = Number.MAX_VALUE;
             return this;
         }
     });
@@ -583,7 +580,7 @@ game.module(
         var min = Number.MAX_VALUE;
         var max = -Number.MAX_VALUE;
         var len = points.length;
-        for (var i = 0; i < len; i++ ) {
+        for (var i = 0; i < len; i++) {
             // The magnitude of the projection of the point onto the normal
             var dot = points[i].dot(normal);
             if (dot < min) { min = dot; }
