@@ -5,7 +5,7 @@ Ninja Physics is a physics plugin for Panda.js, which is inspired by [articles](
 ## Features
 
 - Spatial partitioning based broad phase
-- Better SAT implementation (WIP)
+- Better SAT implementation
 - Tile collision (coming soon)
 
 ---
