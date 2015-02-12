@@ -39,6 +39,11 @@ game.module(
             this.y *= y || x;
             return this;
         },
+        /**
+         * Project this vector on to another vector.
+         * @param {game.Vector} other The vector to project onto
+         * @return {game.Vector} This for chaining
+         */
         project: function(other) {
             var amt = this.dot(other) / other.squaredLength();
             this.x = amt * other.x;
@@ -105,6 +110,12 @@ game.module(
             this.offset = new game.Vector();
             this.setPoints(points || []);
         },
+        /**
+         * Set the points of the polygon.
+         * @param {Array<game.Vector>=} points An array of vectors representing the points in the polygon,
+         *   in counter-clockwise order
+         * @return {game.Polygon} This for chaining
+         */
         setPoints: function(points) {
             // Only re-allocate if this is a new polygon or the number of points has changed.
             var lengthChanged = !this.points || this.points.length !== points.length;
@@ -123,16 +134,31 @@ game.module(
             this._recalc();
             return this;
         },
+        /**
+         * Set the current rotation angle of the polygon.
+         * @param {Number} angle The current rotation angle (in radians)
+         * @return {game.Polygon} This for chaining
+         */
         setAngle: function(angle) {
             this.angle = angle;
             this._recalc();
             return this;
         },
+        /**
+         * Set the current offset to apply to the `points` before applying the `angle` rotation.
+         * @param {game.Vector} offset The new offset vector
+         * @return {game.Polygon} This for chaining
+         */
         setOffset: function(offset) {
             this.offset = offset;
             this._recalc();
             return this;
         },
+        /**Rotates this polygon counter-clockwise around the origin of *its local coordinate system* (i.e. `pos`).
+         * Note: This changes the **original** points (so any `angle` will be applied on top of this rotation).
+         * @param {Number} angle The angle to rotate (in radians)
+         * @return {game.Polygon} This for chaining
+         */
         rotate: function(angle) {
             var points = this.points;
             for (var i = 0, len = points.length; i < len; i++) {
@@ -141,6 +167,16 @@ game.module(
             this._recalc();
             return this;
         },
+        /**
+         * Translates the points of this polygon by a specified amount relative to the origin of *its own coordinate
+         * system* (i.e. `body.position`)
+         * This is most useful to change the "center point" of a polygon. If you just want to move the whole polygon, change
+         * the coordinates of `body.position`.
+         * Note: This changes the **original** points (so any `offset` will be applied on top of this translation)
+         * @param {Number} x The horizontal amount to translate
+         * @param {Number} y The vertical amount to translate
+         * @return {game.Polygon} This for chaining
+         */
         translate: function(x, y) {
             var points = this.points;
             for (var i = 0, len = points.length; i < len; i++) {
@@ -150,6 +186,11 @@ game.module(
             this._recalc();
             return this;
         },
+        /**
+         * Computes the calculated collision polygon. Applies the `angle` and `offset` to the original points then recalculates the
+         * edges and normals of the collision polygon.
+         * @return {game.Polygon} This for chaining
+         */
         _recalc: function() {
             // Calculated points - this is what is used for underlying collisions and takes into account
             // the angle/offset set on the polygon.
@@ -188,6 +229,10 @@ game.module(
     });
 
     game.Rectangle.inject({
+        /**
+         * Returns a polygon whose edges are the same as this rectangle.
+         * @return {game.Polygon} A new Polygon that represents this box
+         */
         toPolygon: function() {
             return new game.Polygon([
                 new game.Vector(), new game.Vector(this.width, 0),
@@ -196,6 +241,15 @@ game.module(
         }
     });
 
+    /**
+     * Response
+     * An object representing the result of an intersection. Contains:
+     * - The two objects participating in the intersection
+     * - The vector representing the minimum change necessary to extract the first object
+     *   from the second one (as well as a unit vector in that direction and the magnitude
+     *   of the overlap)
+     * - Whether the first object is entirely inside the second, and vice versa.
+     */
     game.createClass('Response', {
         a: null,
         b: null,
@@ -208,6 +262,12 @@ game.module(
             this.overlapN = new game.Vector();
             this.overlapV = new game.Vector();
         },
+        /**
+         * Set some values of the response back to their defaults.  Call this between tests if
+         * you are going to reuse a single Response object for multiple intersection tests (recommented
+         * as it will avoid allcating extra memory)
+         * @return {game.Response} This for chaining
+         */
         clear: function() {
             this.aInB = true;
             this.bInA = true;
@@ -566,15 +626,15 @@ game.module(
 
     // Helper Functions ------------------------------------
 
-    // Flattens the specified array of points onto a unit vector axis,
-    // resulting in a one dimensional range of the minimum and
-    // maximum value on that axis.
     /**
-     * @param {Array.<game.Vector>} points The points to flatten.
-     * @param {game.Vector} normal The unit vector axis to flatten on.
-     * @param {Array.<Number>} result An array.  After calling this function,
+     * Flattens the specified array of points onto a unit vector axis,
+     * resulting in a one dimensional range of the minimum and
+     * maximum value on that axis.
+     * @param {Array<game.Vector>} points The points to flatten
+     * @param {game.Vector} normal The unit vector axis to flatten on
+     * @param {Array<Number>} result An array.  After calling this function,
      *   result[0] will be the minimum value,
-     *   result[1] will be the maximum value.
+     *   result[1] will be the maximum value
      */
     function flattenPointsOn(points, normal, result) {
         var min = Number.MAX_VALUE;
@@ -589,20 +649,20 @@ game.module(
         result[0] = min; result[1] = max;
     }
 
-    // Check whether two convex polygons are separated by the specified
-    // axis (must be a unit vector).
     /**
-     * @param {Vector} aPos The position of the first polygon.
-     * @param {Vector} bPos The position of the second polygon.
-     * @param {Array.<Vector>} aPoints The points in the first polygon.
-     * @param {Array.<Vector>} bPoints The points in the second polygon.
-     * @param {Vector} axis The axis (unit sized) to test against.  The points of both polygons
-     *   will be projected onto this axis.
-     * @param {Response=} response A Response object (optional) which will be populated
-     *   if the axis is not a separating axis.
-     * @return {boolean} true if it is a separating axis, false otherwise.  If false,
+     * Check whether two convex polygons are separated by the specified
+     * axis (must be a unit vector).
+     * @param {game.Vector} aPos The position of the first polygon
+     * @param {game.Vector} bPos The position of the second polygon
+     * @param {Array<game.Vector>} aPoints The points in the first polygon
+     * @param {Array<game.Vector>} bPoints The points in the second polygon
+     * @param {game.Vector} axis The axis (unit sized) to test against. The points of both polygons
+     *   will be projected onto this axis
+     * @param {game.Response=} response A Response object (optional) which will be populated
+     *   if the axis is not a separating axis
+     * @return {Boolean} true if it is a separating axis, false otherwise.  If false,
      *   and a response is passed in, information about how much overlap and
-     *   the direction of the overlap will be populated.
+     *   the direction of the overlap will be populated
      */
     function isSeparatingAxis(aPos, bPos, aPoints, bPoints, axis, response) {
         var rangeA = T_ARRAYS.pop();
@@ -672,18 +732,17 @@ game.module(
         return false;
     }
 
-    // Calculates which Vornoi region a point is on a line segment.
-    // It is assumed that both the line and the point are relative to `(0,0)`
-    //
-    //            |       (0)      |
-    //     (-1)  [S]--------------[E]  (1)
-    //            |       (0)      |
     /**
-     * @param {Vector} line The line segment.
-     * @param {Vector} point The point.
-     * @return  {number} LEFT_VORNOI_REGION (-1) if it is the left region,
-     *          MIDDLE_VORNOI_REGION (0) if it is the middle region,
-     *          RIGHT_VORNOI_REGION (1) if it is the right region.
+     * Calculates which Vornoi region a point is on a line segment.
+     * It is assumed that both the line and the point are relative to `(0,0)`
+     *            |       (0)      |
+     *     (-1)  [S]--------------[E]  (1)
+     *            |       (0)      |
+     * @param {game.Vector} line The line segment
+     * @param {game.Vector} point The point
+     * @return {number} LEFT_VORNOI_REGION (-1) if it is the left region,
+     *         MIDDLE_VORNOI_REGION (0) if it is the middle region,
+     *         RIGHT_VORNOI_REGION (1) if it is the right region
      */
     function vornoiRegion(line, point) {
         var len2 = line.squaredLength();
@@ -698,26 +757,17 @@ game.module(
         else { return MIDDLE_VORNOI_REGION; }
     }
     // Constants for Vornoi regions
-    /**
-     * @const
-     */
     var LEFT_VORNOI_REGION = -1;
-    /**
-     * @const
-     */
     var MIDDLE_VORNOI_REGION = 0;
-    /**
-     * @const
-     */
     var RIGHT_VORNOI_REGION = 1;
 
     // Collision Tests ---------------------------------------
 
-    // Check if a point is inside a circle.
     /**
-     * @param {Vector} p The point to test.
-     * @param {Circle} c The circle to test.
-     * @return {boolean} true if the point is inside the circle, false if it is not.
+     * Check if a point is inside a circle.
+     * @param {game.Vector} p The point to test
+     * @param {game.Circle} c The circle to test
+     * @return {Boolean} true if the point is inside the circle, false if it is not
      */
     game.pointInCircle = function pointInCircle(p, c) {
         var differenceV = T_VECTORS.pop().copy(p).subtract(c.position);
@@ -728,11 +778,11 @@ game.module(
         return distanceSq <= radiusSq;
     }
 
-    // Check if a point is inside a convex polygon.
     /**
-     * @param {Vector} p The point to test.
-     * @param {Polygon} poly The polygon to test.
-     * @return {boolean} true if the point is inside the polygon, false if it is not.
+     * Check if a point is inside a convex polygon.
+     * @param {game.Vector} p The point to test
+     * @param {game.Polygon} poly The polygon to test
+     * @return {Boolean} true if the point is inside the polygon, false if it is not
      */
     game.pointInPolygon = function pointInPolygon(p, poly) {
         UNIT_SQUARE.position.copy(p);
@@ -744,13 +794,13 @@ game.module(
         return result;
     }
 
-    // Check if two circles collide.
     /**
-     * @param {Body} a The first circle body.
-     * @param {Body} b The second circle body.
-     * @param {Response=} response Response object (optional) that will be populated if
-     *   the circles intersect.
-     * @return {boolean} true if the circles intersect, false if they don't.
+     * Check if two circles collide.
+     * @param {game.Body} a The first circle body
+     * @param {game.Body} b The second circle body
+     * @param {game.Response=} response Response object (optional) that will be populated if
+     *   the circles intersect
+     * @return {Boolean} true if the circles intersect, false if they don't
      */
     game.testCircleCircle = function testCircleCircle(a, b, response) {
         // Check if the distance between the centers of the two
@@ -779,13 +829,13 @@ game.module(
         return true;
     }
 
-    // Check if a polygon and a circle collide.
     /**
-     * @param {Polygon} polygon The polygon.
-     * @param {Circle} circle The circle.
-     * @param {Response=} response Response object (optional) that will be populated if
-     *   they interset.
-     * @return {boolean} true if they intersect, false if they don't.
+     * Check if a polygon and a circle collide.
+     * @param {game.Polygon} polygon The polygon
+     * @param {game.Circle} circle The circle
+     * @param {game.Response=} response Response object (optional) that will be populated if
+     *   they interset
+     * @return {Boolean} true if they intersect, false if they don't
      */
     game.testPolygonCircle = function testPolygonCircle(polygon, circle, response) {
         // Get the position of the circle relative to the polygon.
@@ -919,16 +969,17 @@ game.module(
         return true;
     }
 
-    // Check if a circle and a polygon collide.
-    //
-    // **NOTE:** This is slightly less efficient than polygonCircle as it just
-    // runs polygonCircle and reverses everything at the end.
     /**
-     * @param {Circle} circle The circle.
-     * @param {Polygon} polygon The polygon.
-     * @param {Response=} response Response object (optional) that will be populated if
-     *   they interset.
-     * @return {boolean} true if they intersect, false if they don't.
+     * Check if a circle and a polygon collide.
+     *
+     * **NOTE:** This is slightly less efficient than polygonCircle as it just
+     * runs polygonCircle and reverses everything at the end.
+     *
+     * @param {game.Circle} circle The circle
+     * @param {game.Polygon} polygon The polygon
+     * @param {game.Response=} response Response object (optional) that will be populated if
+     *   they interset
+     * @return {Boolean} true if they intersect, false if they don't
      */
     game.testCirclePolygon = function testCirclePolygon(circle, polygon, response) {
         // Test the polygon against the circle.
@@ -947,13 +998,13 @@ game.module(
         return result;
     }
 
-    // Checks whether polygons collide.
     /**
-     * @param {Polygon} a The first polygon.
-     * @param {Polygon} b The second polygon.
-     * @param {Response=} response Response object (optional) that will be populated if
-     *   they interset.
-     * @return {boolean} true if they intersect, false if they don't.
+     * Checks whether polygons collide.
+     * @param {game.Polygon} a The first polygon
+     * @param {game.Polygon} b The second polygon
+     * @param {game.Response=} response Response object (optional) that will be populated if
+     *   they interset
+     * @return {Boolean} true if they intersect, false if they don't
      */
     game.testPolygonPolygon = function testPolygonPolygon(a, b, response) {
         var aPoints = a.shape.calcPoints;
@@ -985,30 +1036,30 @@ game.module(
 
     // Object Pools -----------------------------------------
 
-    // A pool of `game.Vector` objects that are used in calculations to avoid
-    // allocating memory.
     /**
-     * @type {Array.<game.Vector>}
+     * A pool of `game.Vector` objects that are used in calculations to avoid
+     * allocating memory.
+     * @type {Array<game.Vector>}
      */
     var T_VECTORS = [];
     for (var i = 0; i < 10; i++) { T_VECTORS.push(new game.Vector()); }
 
-    // A pool of arrays of numbers used in calculations to avoid allocating
-    // memory.
     /**
-     * @type {Array.<Array.<number>>}
+     * A pool of arrays of numbers used in calculations to avoid allocating
+     * memory.
+     * @type {Array<Array<Bumber>>}
      */
     var T_ARRAYS = [];
     for (var i = 0; i < 5; i++) { T_ARRAYS.push([]); }
 
-    // Temporary response used for polygon hit detection.
     /**
+     * Temporary response used for polygon hit detection.
      * @type {game.Response}
      */
     var T_RESPONSE = new game.Response();
 
-    // Unit square polygon used for polygon hit detection.
     /**
+     * Unit square polygon used for polygon hit detection.
      * @type {game.Polygon}
      */
     var UNIT_SQUARE = new game.Body({
