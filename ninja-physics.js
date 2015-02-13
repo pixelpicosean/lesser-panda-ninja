@@ -276,6 +276,74 @@ game.module(
         }
     });
 
+    /**
+     * SAT based collision solver
+     */
+    game.createClass('SATSolver', {
+        /**
+         * Hit test a versus b.
+         * @method hitTest
+         * @param {game.Body} a
+         * @param {game.Body} b
+         * @return {Boolean} return true, if bodies hit.
+         */
+        hitTest: function(a, b, response) {
+            // Polygon vs polygon
+            if (a.shape.points && b.shape.points) {
+                return game.testPolygonPolygon(a, b, response);
+            }
+            if (a.shape.radius && b.shape.radius) {
+                return game.testCircleCircle(a, b, response);
+            }
+            if (a.shape.points && b.shape.radius) {
+                return game.testPolygonCircle(a, b, response);
+            }
+            else if (a.shape.radius && b.shape.points) {
+                return game.testPolygonCircle(b, a, response);
+            }
+
+            throw 'Hit test should not go so far!';
+            return false;
+        },
+        hitResponse: function(a, b, AvsB, BvsA, response) {
+            // Make sure a and b are not reversed
+            var uniqueA = (a === response.a ? a : b),
+                uniqueB = (b === response.b ? b : a);
+            var responseToA = false,
+                responseToB = false;
+            // Check to see which one or two finally get the response
+            if (AvsB && !BvsA) {
+                responseToA = uniqueA.collide(uniqueB, response);
+            }
+            else if (!AvsB && BvsA) {
+                responseToB = uniqueB.collide(uniqueA, response);
+            }
+            else if (AvsB && BvsA) {
+                responseToA = uniqueA.collide(uniqueB, response);
+                responseToB = uniqueB.collide(uniqueA, response);
+            }
+
+            // Only apply response to A if it wants to
+            if (responseToA && !responseToB) {
+                uniqueA.position.subtract(response.overlapV);
+                uniqueA.afterCollide(uniqueB);
+            }
+            // Only apply response to B if it wants to
+            else if (!responseToA && responseToB) {
+                uniqueB.position.subtract(response.overlapV);
+                uniqueB.afterCollide(uniqueA);
+            }
+            // Apply response to both A and B
+            else if (responseToA && responseToB) {
+                response.overlapV.scale(0.5);
+                uniqueA.position.subtract(response.overlapV);
+                uniqueB.position.add(response.overlapV);
+                uniqueA.afterCollide(uniqueB);
+                uniqueB.afterCollide(uniqueA);
+            }
+        }
+    });
+
     game.World.inject({
         /**
          * SpatialGrid for Broad-Phase Collision.
@@ -290,9 +358,9 @@ game.module(
 
         init: function(x, y) {
             this.gravity = new game.Vector(x || 0, y || 980);
-            this.solver = new game.CollisionSolver();
+            this.solver = new game.SATSolver();
             // Initial size of the grid is 1x1 in cell
-            this.spatialGrid = new game.SpatialGrid(this.cellSize);
+            this.spatialGrid = new game.SpatialGrid(this.cellSize, this.bodies);
         },
 
         /**
@@ -303,7 +371,7 @@ game.module(
         addBody: function(body) {
             body.world = this;
             body._remove = false;
-            this.spatialGrid.addBody(body);
+            this.bodies.push(body);
             if (game.debugDraw && body.shape) {
                 game.debugDraw.addBody(body);
             }
@@ -317,7 +385,7 @@ game.module(
         removeBody: function(body) {
             if (!body.world) return;
             body.world = null;
-            this.spatialGrid.removeBody(body);
+            body._remove = true;
         },
 
         /**
@@ -349,12 +417,24 @@ game.module(
             this._super(settings);
             this._id = game.Body.uid++;
 
+            // Convert Rectangle to Polygon
+            // TODO: remove this after Rectangle vs Rectanvle completed
+            if (this.shape.width) {
+                this.shape = this.shape.toPolygon();
+            }
+
             if (this.shape) {
                 this.shape.body = this;
             }
         },
         addShape: function(shape) {
             this.shape = shape;
+            // Convert Rectangle to Polygon
+            // TODO: remove this after Rectangle vs Rectanvle completed
+            if (this.shape.width) {
+                this.shape = this.shape.toPolygon();
+            }
+
             shape.body = this;
             return this;
         }
@@ -389,6 +469,12 @@ game.module(
         grid: null,
 
         /**
+         * Response object for testing reuse
+         * @type {game.Response}
+         */
+        response: null,
+
+        /**
          * How many collision tests occured within current step
          * @type {Number}
          */
@@ -409,13 +495,14 @@ game.module(
          */
         hashChecks: 0,
 
-        init: function(cellSize) {
-            this.bodies = [];
+        init: function(cellSize, bodies) {
+            this.bodies = bodies;
 
             this.min = new game.Vector(0, 0);
-            this.max = new game.Vector(cellSize, cellSize);
+            this.max = new game.Vector(game.system.width, game.system.height);
             this.pxCellSize = cellSize;
             this.grid = [[]];
+            this.response = new game.Response();
 
             // These are purely for reporting purposes
             this.collisionTests = 0;
@@ -424,6 +511,7 @@ game.module(
             this.hashChecks = 0;
         },
         update: function() {
+            // TODO: calculate `this.min` and `this.max` based on bodies
             var cGridWidth = Math.floor((this.max.x - this.min.x) / this.pxCellSize),
                 cGridHeight = Math.floor((this.max.y - this.min.y) / this.pxCellSize),
                 cXEntityMin, cXEntityMax, cYEntityMin, cYEntityMax, i, j, body, cX, cY, gridCol, gridCell;
@@ -450,18 +538,29 @@ game.module(
 
                 // Find extremes of cells that body overlaps
                 // Subtract min to shift grid to avoid negative numbers
-                var bodyWidth, bodyHeight;
-                if (body.shape.width) {
-                    bodyWidth = body.shape.width;
-                    bodyHeight = body.shape.height;
+                var top, right, bottom, left;
+                if (body.shape.points) {
+                    var axis = T_VECTORS.pop(),
+                        res = T_ARRAYS.pop();
+                    flattenPointsOn(body.shape.points, axis.set(1, 0), res);
+                    left = res[0];
+                    right = res[1];
+                    flattenPointsOn(body.shape.points, axis.set(0, 1), res);
+                    top = res[0];
+                    bottom = res[1];
+                    T_VECTORS.push(axis);
+                    T_ARRAYS.push(res);
                 }
                 else if (body.shape.radius) {
-                    bodyWidth = bodyHeight = body.shape.radius;
+                    left = body.position.x;
+                    right = body.position.x + body.shape.radius * 2;
+                    top = body.position.y;
+                    bottom = body.position.y + body.shape.radius * 2;
                 }
-                cXEntityMin = Math.floor((body.position.x - this.min.x) / this.pxCellSize);
-                cXEntityMax = Math.floor((body.position.x + bodyWidth - this.min.x) / this.pxCellSize);
-                cYEntityMin = Math.floor((body.position.y - this.min.y) / this.pxCellSize);
-                cYEntityMax = Math.floor((body.position.y + bodyHeight - this.min.y) / this.pxCellSize);
+                cXEntityMin = Math.floor((left - this.min.x) / this.pxCellSize);
+                cXEntityMax = Math.floor((right - this.min.x) / this.pxCellSize);
+                cYEntityMin = Math.floor((top - this.min.y) / this.pxCellSize);
+                cYEntityMax = Math.floor((bottom - this.min.y) / this.pxCellSize);
 
                 // Insert body into each cell it overlaps
                 // We're looping to make sure that all cells between extremes are found
@@ -491,51 +590,6 @@ game.module(
                     }
                 }
             }
-        },
-
-        addBody: function(body) {
-            var halfWidth = 1, halfHeight = 1;
-            if (body.shape.radius) {
-                halfWidth = halfHeight = body.shape.radius;
-            }
-            else {
-                if (body.shape.width) {
-                    halfWidth = body.shape.width * 0.5;
-                }
-                if (body.shape.height) {
-                    halfHeight = body.shape.height * 0.5;
-                }
-            }
-
-            // Bounds should be re-initialized when the bodies list is empty
-            if (this.bodies.length === 0) {
-                this.min.x = Math.floor(body.position.x - halfWidth);
-                this.min.y = Math.floor(body.position.y - halfHeight);
-                this.max.x = Math.floor(body.position.x + halfWidth);
-                this.max.y = Math.floor(body.position.y + halfHeight);
-            }
-            else {
-                // Fast update bounds instead of iterator whole list
-                if (body.position.x - halfWidth < this.min.x) {
-                    this.min.x = Math.floor(body.position.x - halfWidth);
-                }
-                else if (body.position.x + halfWidth > this.max.x) {
-                    this.max.x = Math.floor(body.position.x + halfWidth);
-                }
-                if (body.position.y - halfHeight < this.min.y) {
-                    this.min.y = Math.floor(body.position.y - halfHeight);
-                }
-                else if (body.position.y + halfHeight > this.max.y) {
-                    this.max.y = Math.floor(body.position.y + halfHeight);
-                }
-            }
-
-            this.bodies.push(body);
-        },
-
-        removeBody: function(body) {
-            body._remove = true;
-            this.updateBounds();
         },
 
         handleCollision: function(solver, shouldCollide) {
@@ -570,56 +624,37 @@ game.module(
                         bodyA = gridCell[k];
 
                         // For every other object in a cell...
-                        for (l = 0; l < gridCell.length; l++) {
+                        for (l = k + 1; l < gridCell.length; l++) {
                             bodyB = gridCell[l];
 
-                            if ((bodyA === bodyB) || !shouldCollide(bodyA, bodyB)) {
+                            // Skip if they should not collide with each other
+                            aShouldCollideWithB = shouldCollide(bodyA, bodyB);
+                            bShouldCollideWithA = shouldCollide(bodyB, bodyA);
+                            if (!aShouldCollideWithB && !bShouldCollideWithA) {
                                 continue;
                             }
 
-                            // Create a unique key to mark this check
+                            // Create a unique key to mark this pair
                             hashA = bodyA._id + ':' + bodyB._id;
+                            hashB = bodyB._id + ':' + bodyA._id;
 
-                            this.hashChecks += 1;
+                            this.hashChecks += 2;
 
-                            if (!checked[hashA]) {
-                                checked[hashA] = true;
+                            if (!checked[hashA] && !checked[hashB]) {
+                                checked[hashA] = checked[hashB] = true;
 
                                 this.collisionTests += 1;
 
                                 // Test collision
-                                if (solver.hitTest(bodyA, bodyB)) {
-                                    // Solve collision
-                                    if (solver.hitResponse(bodyA, bodyB)) {
-                                        bodyA.afterCollide(bodyB);
-                                    }
+                                this.response.clear();
+                                if (solver.hitTest(bodyA, bodyB, this.response)) {
+                                    // Solve collision response
+                                    solver.hitResponse(bodyA, bodyB, aShouldCollideWithB, bShouldCollideWithA, this.response);
                                 }
                             }
                         }
                     }
                 }
-            }
-        },
-
-        updateBounds: function() {
-            if (this.bodies.length === 0) {
-                return;
-            }
-
-            var i, len, body, halfWidth, halfHeight;
-            for (i = 0, len = this.bodies.length; i < len; i++) {
-                body = this.bodies[i];
-                if (body.shape.width) {
-                    halfWidth = body.shape.width * 0.5;
-                    halfHeight = body.shape.height * 0.5;
-                }
-                else if (body.shape.radius) {
-                    halfWidth = halfHeight = body.shape.radius;
-                }
-                this.min.x = Math.min(this.min.x, body.position.x - halfWidth);
-                this.min.y = Math.min(this.min.y, body.position.y - halfHeight);
-                this.max.x = Math.max(this.max.x, body.position.x + halfWidth);
-                this.max.y = Math.max(this.max.y, body.position.y + halfHeight);
             }
         }
     });
@@ -983,7 +1018,7 @@ game.module(
      */
     game.testCirclePolygon = function testCirclePolygon(circle, polygon, response) {
         // Test the polygon against the circle.
-        var result = testPolygonCircle(polygon, circle, response);
+        var result = game.testPolygonCircle(polygon, circle, response);
         if (result && response) {
             // Swap A and B in the response.
             var a = response.a;
