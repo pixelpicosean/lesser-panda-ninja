@@ -522,7 +522,7 @@ game.module(
 
             // Construct grid
             // NOTE: this is a purposeful use of the Array() constructor
-            this.grid = {};
+            this.grid = Object.create(null);
 
             // Insert all bodies into grid
             for (i = 0; i < this.bodies.length; i++) {
@@ -560,7 +560,7 @@ game.module(
                     // Make sure a column exists, initialize if not
                     gridCol = this.grid[cX];
                     if (!gridCol) {
-                        this.grid[cX] = gridCol = {};
+                        this.grid[cX] = gridCol = Object.create(null);
                     }
 
                     // Loop through each cell in this column
@@ -582,7 +582,7 @@ game.module(
         },
 
         handleCollision: function(solver, shouldCollide) {
-            var checked = {},
+            var checked = Object.create(null),
                 bodyA, bodyB, hashA, hashB, i, j, k, l, coIdx, gridCol, gridCell,
                 aShouldCollideWithB = false, bShouldCollideWithA = false;
 
@@ -592,17 +592,19 @@ game.module(
 
             // For every column in the grid...
             for (i in this.grid) {
-                if (!this.grid.hasOwnProperty(i)) {
-                    continue;
-                }
+                // Note: these lines are disabled since grid is now a simple "hasn"
+                // if (!this.grid.hasOwnProperty(i)) {
+                //     continue;
+                // }
 
                 gridCol = this.grid[i];
 
                 // For every cell within a column of the grid...
                 for (j in gridCol) {
-                    if (!gridCol.hasOwnProperty(j)) {
-                        continue;
-                    }
+                    // Note: these lines are disabled since gridCol is now a simple "hasn"
+                    // if (!gridCol.hasOwnProperty(j)) {
+                    //     continue;
+                    // }
                     gridCell = gridCol[j];
 
                     // For every object in a cell...
