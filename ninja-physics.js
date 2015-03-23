@@ -522,19 +522,11 @@ game.module(
 
             // Construct grid
             // NOTE: this is a purposeful use of the Array() constructor
-            this.grid = Array(cGridWidth);
+            this.grid = {};
 
             // Insert all bodies into grid
             for (i = 0; i < this.bodies.length; i++) {
                 body = this.bodies[i];
-
-                // If body is outside the grid extents, then ignore it
-                if (body.position.x < this.min.x ||
-                    body.position.x > this.max.x ||
-                    body.position.y < this.min.y ||
-                    body.position.y > this.max.y) {
-                    continue;
-                }
 
                 // Find extremes of cells that body overlaps
                 // Subtract min to shift grid to avoid negative numbers
@@ -565,25 +557,22 @@ game.module(
                 // Insert body into each cell it overlaps
                 // We're looping to make sure that all cells between extremes are found
                 for (cX = cXEntityMin; cX <= cXEntityMax; cX++) {
-                    // Make sure a column exists, initialize if not to grid height length
-                    // NOTE: again, a purposeful use of the Array constructor
-                    if (!this.grid[cX]) {
-                        this.grid[cX] = Array(cGridHeight);
-                    }
-
+                    // Make sure a column exists, initialize if not
                     gridCol = this.grid[cX];
+                    if (!gridCol) {
+                        this.grid[cX] = gridCol = {};
+                    }
 
                     // Loop through each cell in this column
                     for (cY = cYEntityMin; cY <= cYEntityMax; cY++) {
                         // Ensure we have a bucket to put bodies into for this cell
-                        if (!gridCol[cY]) {
-                            gridCol[cY] = [];
+                        gridCell = gridCol[cY];
+                        if (!gridCell) {
+                            gridCol[cY] = gridCell = [];
 
                             // This is for stats purposes only
                             this.allocatedCells += 1;
                         }
-
-                        gridCell = gridCol[cY];
 
                         // Add body to cell
                         gridCell.push(body);
@@ -602,22 +591,19 @@ game.module(
             this.hashChecks = 0;
 
             // For every column in the grid...
-            for (i = 0; i < this.grid.length; i++) {
-                gridCol = this.grid[i];
-
-                // Ignore columns that have no cells
-                if (!gridCol) {
+            for (i in this.grid) {
+                if (!this.grid.hasOwnProperty(i)) {
                     continue;
                 }
 
-                // For every cell within a column of the grid...
-                for (j = 0; j < gridCol.length; j++) {
-                    gridCell = gridCol[j];
+                gridCol = this.grid[i];
 
-                    // Ignore cells that have no objects
-                    if (!gridCell) {
+                // For every cell within a column of the grid...
+                for (j in gridCol) {
+                    if (!gridCol.hasOwnProperty(j)) {
                         continue;
                     }
+                    gridCell = gridCol[j];
 
                     // For every object in a cell...
                     for (k = 0; k < gridCell.length; k++) {
