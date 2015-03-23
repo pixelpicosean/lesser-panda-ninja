@@ -480,11 +480,6 @@ game.module(
          */
         collisionTests: 0,
         /**
-         * How many cells should be in total for current grid setting
-         * @type {Number}
-         */
-        totalCells: 0,
-        /**
          * How many cells allocated for collision test
          * @type {Number}
          */
@@ -511,13 +506,8 @@ game.module(
             this.hashChecks = 0;
         },
         update: function() {
-            // TODO: calculate `this.min` and `this.max` based on bodies
-            var cGridWidth = Math.floor((this.max.x - this.min.x) / this.pxCellSize),
-                cGridHeight = Math.floor((this.max.y - this.min.y) / this.pxCellSize),
-                cXEntityMin, cXEntityMax, cYEntityMin, cYEntityMax, i, j, body, cX, cY, gridCol, gridCell;
+            var cXEntityMin, cXEntityMax, cYEntityMin, cYEntityMax, i, j, body, cX, cY, gridCol, gridCell;
 
-            // The total number of cells this grid will contain.
-            this.totalCells = cGridWidth * cGridHeight;
             this.allocatedCells = 0;
 
             // Construct grid
