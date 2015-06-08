@@ -515,11 +515,11 @@ game.module(
                     var axis = T_VECTORS.pop(),
                         res = T_ARRAYS.pop();
                     flattenPointsOn(body.shape.points, axis.set(1, 0), res);
-                    left = res[0];
-                    right = res[1];
+                    left = res[0] + body.position.x;
+                    right = res[1] + body.position.x;
                     flattenPointsOn(body.shape.points, axis.set(0, 1), res);
-                    top = res[0];
-                    bottom = res[1];
+                    top = res[0] + body.position.y;
+                    bottom = res[1] + body.position.y;
                     T_VECTORS.push(axis);
                     T_ARRAYS.push(res);
                 }
