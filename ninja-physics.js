@@ -445,16 +445,6 @@ game.module(
 
     game.createClass('SpatialGrid', {
         /**
-         * Position of the grid left-top point
-         * @type {game.Vector}
-         */
-        min: null,
-        /**
-         * Position of the grid bottom-right point
-         * @type {game.Vector}
-         */
-        max: null,
-        /**
          * Grid cell size in pixel
          * @type {Number}
          */
@@ -495,8 +485,6 @@ game.module(
         init: function(cellSize, bodies) {
             this.bodies = bodies;
 
-            this.min = new game.Vector(0, 0);
-            this.max = new game.Vector(game.system.width, game.system.height);
             this.pxCellSize = cellSize;
             this.grid = [[]];
             this.response = new game.Response();
@@ -541,10 +529,10 @@ game.module(
                     top = body.position.y;
                     bottom = body.position.y + body.shape.radius * 2;
                 }
-                cXEntityMin = Math.floor((left - this.min.x) / this.pxCellSize);
-                cXEntityMax = Math.floor((right - this.min.x) / this.pxCellSize);
-                cYEntityMin = Math.floor((top - this.min.y) / this.pxCellSize);
-                cYEntityMax = Math.floor((bottom - this.min.y) / this.pxCellSize);
+                cXEntityMin = Math.floor(left / this.pxCellSize);
+                cXEntityMax = Math.floor(right / this.pxCellSize);
+                cYEntityMin = Math.floor(top / this.pxCellSize);
+                cYEntityMax = Math.floor(bottom / this.pxCellSize);
 
                 // Insert body into each cell it overlaps
                 // We're looping to make sure that all cells between extremes are found
