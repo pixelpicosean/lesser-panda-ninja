@@ -524,10 +524,10 @@ game.module(
                     T_ARRAYS.push(res);
                 }
                 else if (body.shape.radius) {
-                    left = body.position.x;
-                    right = body.position.x + body.shape.radius * 2;
-                    top = body.position.y;
-                    bottom = body.position.y + body.shape.radius * 2;
+                    left = body.position.x - body.shape.radius;
+                    right = body.position.x + body.shape.radius;
+                    top = body.position.y - body.shape.radius;
+                    bottom = body.position.y + body.shape.radius;
                 }
                 cXEntityMin = Math.floor(left / this.pxCellSize);
                 cXEntityMax = Math.floor(right / this.pxCellSize);
