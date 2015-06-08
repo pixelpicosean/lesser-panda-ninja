@@ -301,7 +301,7 @@ game.module(
                 return game.testPolygonCircle(a, b, response);
             }
             else if (a.shape.radius && b.shape.points) {
-                return game.testPolygonCircle(b, a, response);
+                return game.testCirclePolygon(a, b, response);
             }
 
             throw 'Hit test should not go so far!';
