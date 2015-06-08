@@ -234,9 +234,11 @@ game.module(
          * @return {game.Polygon} A new Polygon that represents this box
          */
         toPolygon: function() {
+            var halfWidth = this.width * 0.5;
+            var halfHeight = this.height * 0.5;
             return new game.Polygon([
-                new game.Vector(), new game.Vector(this.width, 0),
-                new game.Vector(this.width, this.height), new game.Vector(0, this.height)
+                new game.Vector(-halfWidth, -halfHeight), new game.Vector(halfWidth, -halfHeight),
+                new game.Vector(halfWidth, halfHeight), new game.Vector(-halfWidth, halfHeight)
             ]);
         }
     });
