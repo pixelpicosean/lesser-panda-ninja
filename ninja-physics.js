@@ -332,7 +332,7 @@ game.module(
             }
             // Only apply response to B if it wants to
             else if (!responseToA && responseToB) {
-                uniqueB.position.subtract(response.overlapV);
+                uniqueB.position.add(response.overlapV);
                 uniqueB.afterCollide(uniqueA);
             }
             // Apply response to both A and B
