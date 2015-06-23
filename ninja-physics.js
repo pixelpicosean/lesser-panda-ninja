@@ -113,7 +113,7 @@ game.module(
         /**
          * Set the points of the polygon.
          * @param {Array<game.Vector>=} points An array of vectors representing the points in the polygon,
-         *   in counter-clockwise order
+         *   in clockwise order
          * @return {game.Polygon} This for chaining
          */
         setPoints: function(points) {
@@ -394,7 +394,7 @@ game.module(
          * Update physics world.
          *  @method update
          */
-        update: function() {
+        _update: function() {
             var i, j,
                 bodies = this.spatialGrid.bodies;
             for (i = bodies.length - 1; i >= 0; i--) {
@@ -416,7 +416,7 @@ game.module(
     game.Body.inject({
         _id: 0,
         init: function(settings) {
-            this._super(settings);
+            this.super(settings);
             this._id = game.Body.uid++;
 
             // Convert Rectangle to Polygon
