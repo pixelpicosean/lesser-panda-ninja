@@ -359,7 +359,9 @@ game.module(
         cellSize: 64,
 
         init: function(x, y) {
-            this.gravity = new game.Vector(x || 0, y || 980);
+            x = typeof x === 'number' ? x : 0;
+            y = typeof y === 'number' ? y : 980;
+            this.gravity = new game.Vector(x, y);
             this.solver = new game.SATSolver();
             // Initial size of the grid is 1x1 in cell
             this.spatialGrid = new game.SpatialGrid(this.cellSize, this.bodies);
