@@ -95,8 +95,25 @@ game.module(
          */
         squaredLength: function() {
             return this.dot();
+        },
+
+        /**
+         * Get the squared distance to another vector.
+         * @param  {game.Vector} vector The target vector.
+         * @return {Numver}             Distance value
+         */
+        squaredDistance: function(vector) {
+          var x = vector.x - this.x;
+          var y = vector.y - this.y;
+          return x * x + y * y;
         }
     });
+
+    game.Vector.ZERO = new game.Vector();
+    game.Vector.UP = new game.Vector(0, -1);
+    game.Vector.DOWN = new game.Vector(0, 1);
+    game.Vector.LEFT = new game.Vector(-1, 0);
+    game.Vector.RIGHT = new game.Vector(1, 0);
 
     // TODO: finish polygon related methods
     game.createClass('Polygon', {
