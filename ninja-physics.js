@@ -458,6 +458,14 @@ game.module(
 
             shape.body = this;
             return this;
+        },
+        /**
+            Set new collision group for body.
+            @method setCollisionGroup
+            @param {Number} group
+        **/
+        setCollisionGroup: function(group) {
+            this.collisionGroup = group;
         }
     });
     game.Body.uid = 0;
