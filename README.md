@@ -87,6 +87,74 @@ response.overlapV.x === 10; // They are only overlapping in x-axis
 response.overlapV.y === 0; // No overlapping in y-axis
 ```
 
+### Advance
+
+#### Collision group explaination
+
+Collision groups perform a little different from Panda built-in physics
+module. Forturnately, the difference is very small.
+
+I'm going to use "Breakout" as the example to explain how you can define
+collision groups.
+
+```javascript
+// It is always recommended to define groups as constants instead of
+// using number directly.
+var GROUPS = {
+  WALL: 0,   // Wall, solid and no need to customize its `collide` method
+  BLOCK: 1,   // Blocks, use `collide` to spawn items and update score
+  BALL: 2,    // Ball, will bounce back from WALL and BLOCK
+  PADDLE: 3   // Paddle, control how ball is going to move on collision
+};
+
+// Wall does not have `collideAgainst`,
+// so `collide` method won't even be called once and do not receive
+// any responses.
+//
+// Which means that it is completely SOLID and
+// sometimes people called it "FIXED".
+var wall = new game.Body({
+  collisionGroup: GROUPS.WALL
+});
+
+// Blocks will collide with ball.
+var block = new game.Body({
+  collisionGroup: GROUPS.BLOCK,
+  collideAgainst: [GROUPS.BALL],
+  collide: function(ball) {
+    // Get score, remove self from world
+    block.remove();
+
+    // Do not move
+    return false;
+  }
+});
+
+var ball = new game.Body({
+  collisionGroup: GROUPS.BALL,
+  collideAgainst: [GROUPS.WALL, GROUPS.BLOCK],
+  collide: function(other, response) {
+    // Bounce back
+    var n = response.overlapN.clone();
+    this.velocity.subtract(n.multiply(2 * this.velocity.dot(n)));
+    // Receive response
+    return true;
+  }
+});
+
+var paddle = new game.Body({
+  collisionGroup: GROUPS.PADDLE,
+  collideAgainst: [GROUPS.BALL],
+  collide: function(ball, response) {
+    // Bounce the ball back based on its position
+    // ...
+
+    // Do not move
+    return false;
+  }
+});
+```
+
 ## API Doc
 
 ### Polygon
