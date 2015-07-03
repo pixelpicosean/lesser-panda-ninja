@@ -451,14 +451,14 @@ game.module(
             this.super(settings);
             this._id = game.Body.uid++;
 
-            // Convert Rectangle to Polygon
-            // TODO: remove this after Rectangle vs Rectanvle completed
-            if (this.shape.width) {
-                this.shape = this.shape.toPolygon();
-            }
-
             if (this.shape) {
                 this.shape.body = this;
+
+                // Convert Rectangle to Polygon
+                // TODO: remove this after Rectangle vs Rectanvle completed
+                if (this.shape.width) {
+                    this.shape = this.shape.toPolygon();
+                }
             }
         },
         addShape: function(shape) {
