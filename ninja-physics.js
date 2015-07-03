@@ -106,6 +106,19 @@ game.module(
           var x = vector.x - this.x;
           var y = vector.y - this.y;
           return x * x + y * y;
+        },
+
+        /**
+         * Returns positive if vector is clockwise of this vector
+         * @return {Number} 1: CW, -1: CCW
+         */
+        sign: function(vector) {
+          if (this.y * vector.x > this.x * vector.y) {
+            return -1;
+          }
+          else {
+            return 1;
+          }
         }
     });
 
