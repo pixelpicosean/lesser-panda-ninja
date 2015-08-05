@@ -1,6 +1,6 @@
 # Ninja Physics
 
-Ninja Physics is a physics plugin for Panda.js, which is inspired by [articles](http://www.metanetsoftware.com/technique/tutorialA.html) of Metanet Software.
+Ninja Physics is a physics plugin for LesserPanda engine, and is inspired by [articles](http://www.metanetsoftware.com/technique/tutorialA.html) of Metanet Software.
 
 ## Features
 
@@ -298,6 +298,14 @@ game.testCirclePolygon(circle, polygon, response)
  */
 game.testPolygonPolygon(a, b, response)
 ```
+
+## ChangeLog
+
+### v0.1.0
+
+- Polygon shape
+- Extend `Vector` class
+- Collision solver with more detailed `response` feedback
 
 ---
 

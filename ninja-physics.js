@@ -1,3 +1,8 @@
+/**
+ * NinjaPhysics for LesserPanda engine
+ * @version 0.1.0
+ * @author Sean Bohan
+ */
 game.module(
   'plugins.ninja-physics'
 )
