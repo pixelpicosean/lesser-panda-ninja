@@ -56,7 +56,7 @@ var body = new game.Body({
 });
 
 // Rotate it a little bit (45 degrees)
-body.shape.setAngle(Math.PI * 0.25);
+body.rotation = Math.PI * 0.25;
 ```
 
 ### Manually Check Body Overlapping
@@ -170,10 +170,10 @@ will be automatically converted to a `Polygon`.
 var polygon = new game.Polygon(points);
 
 /**
- * Set the current rotation angle (in radians).
+ * Set the current rotation (in radians).
  * @method
  */
-polygon.setAngle(angle);
+polygon.rotation = angle;
 ```
 
 ### Response
@@ -300,6 +300,11 @@ game.testPolygonPolygon(a, b, response)
 ```
 
 ## ChangeLog
+
+### v0.1.1
+
+- Remove `Polygon.setAngle` method, use `rotation` property instead
+- Add `rotation` property to `Body` which will set/get `shape.rotation`
 
 ### v0.1.0
 

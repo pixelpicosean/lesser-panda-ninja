@@ -1,6 +1,6 @@
 /**
  * NinjaPhysics for LesserPanda engine
- * @version 0.1.0
+ * @version 0.1.1
  * @author Sean Bohan
  */
 game.module(
@@ -140,7 +140,7 @@ game.module(
     edges: [],
     normals: [],
     offset: null,
-    angle: 0,
+    _rotation: 0,
     init: function(points) {
       this.offset = new game.Vector();
       this.setPoints(points || []);
@@ -170,17 +170,7 @@ game.module(
       return this;
     },
     /**
-     * Set the current rotation angle of the polygon.
-     * @param {Number} angle The current rotation angle (in radians)
-     * @return {game.Polygon} This for chaining
-     */
-    setAngle: function(angle) {
-      this.angle = angle;
-      this._recalc();
-      return this;
-    },
-    /**
-     * Set the current offset to apply to the `points` before applying the `angle` rotation.
+     * Set the current offset to apply to the `points` before applying the `rotation` rotation.
      * @param {game.Vector} offset The new offset vector
      * @return {game.Polygon} This for chaining
      */
@@ -190,14 +180,14 @@ game.module(
       return this;
     },
     /**Rotates this polygon counter-clockwise around the origin of *its local coordinate system* (i.e. `pos`).
-     * Note: This changes the **original** points (so any `angle` will be applied on top of this rotation).
-     * @param {Number} angle The angle to rotate (in radians)
+     * Note: This changes the **original** points (so any `rotation` will be applied on top of this rotation).
+     * @param {Number} rotation The rotation to rotate (in radians)
      * @return {game.Polygon} This for chaining
      */
-    rotate: function(angle) {
+    rotate: function(rotation) {
       var points = this.points;
       for (var i = 0, len = points.length; i < len; i++) {
-        points[i].rotate(angle);
+        points[i].rotate(rotation);
       }
       this._recalc();
       return this;
@@ -222,13 +212,13 @@ game.module(
       return this;
     },
     /**
-     * Computes the calculated collision polygon. Applies the `angle` and `offset` to the original points then recalculates the
+     * Computes the calculated collision polygon. Applies the `rotation` and `offset` to the original points then recalculates the
      * edges and normals of the collision polygon.
      * @return {game.Polygon} This for chaining
      */
     _recalc: function() {
       // Calculated points - this is what is used for underlying collisions and takes into account
-      // the angle/offset set on the polygon.
+      // the rotation/offset set on the polygon.
       var calcPoints = this.calcPoints;
       // The edges here are the direction of the `n`th edge of the polygon, relative to
       // the `n`th point. If you want to draw a given edge from the edge value, you must
@@ -238,18 +228,18 @@ game.module(
       // to the position of the `n`th point. If you want to draw an edge normal, you must first
       // translate to the position of the starting point.
       var normals = this.normals;
-      // Copy the original points array and apply the offset/angle
+      // Copy the original points array and apply the offset/rotation
       var points = this.points;
       var offset = this.offset;
-      var angle = this.angle;
+      var rotation = this._rotation;
       var len = points.length;
       var i;
       for (i = 0; i < len; i++) {
         var calcPoint = calcPoints[i].copy(points[i]);
         calcPoint.x += offset.x;
         calcPoint.y += offset.y;
-        if (angle !== 0) {
-          calcPoint.rotate(angle);
+        if (rotation !== 0) {
+          calcPoint.rotate(rotation);
         }
       }
       // Calculate the edges/normals
@@ -262,8 +252,18 @@ game.module(
       return this;
     }
   });
+  Object.defineProperty(game.Polygon.prototype, 'rotation', {
+    get: function() {
+      return this._rotation;
+    },
+    set: function(rotation) {
+      this._rotation = rotation;
+      this._recalc();
+    }
+  });
 
   game.Rectangle.inject({
+    rotation: 0,
     /**
      * Returns a polygon whose edges are the same as this rectangle.
      * @return {game.Polygon} A new Polygon that represents this box
@@ -276,6 +276,10 @@ game.module(
         new game.Vector(halfWidth, halfHeight), new game.Vector(-halfWidth, halfHeight)
       ]);
     }
+  });
+
+  game.Circle.inject({
+    rotation: 0
   });
 
   /**
@@ -487,6 +491,15 @@ game.module(
     }
   });
   game.Body.uid = 0;
+
+  Object.defineProperty(game.Body.prototype, 'rotation', {
+    get: function() {
+      return this.shape ? this.shape.rotation : 0;
+    },
+    set: function(rotation) {
+      this.shape && (this.shape.rotation = rotation);
+    }
+  });
 
   game.createClass('SpatialGrid', {
     /**
