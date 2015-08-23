@@ -33,18 +33,6 @@ game.module(
       return this;
     },
     /**
-     * Scale this vector. An independant scaling factor can be provided
-     * for each axis, or a single scaling factor that will scale both `x` and `y`.
-     * @param  {Number} x The scaling factor in the x direction
-     * @param  {Number} y The scaling factor in the y direction
-     * @return {game.Vector} This for chaining
-     */
-    scale: function(x, y) {
-      this.x *= x;
-      this.y *= y || x;
-      return this;
-    },
-    /**
      * Project this vector on to another vector.
      * @param {game.Vector} other The vector to project onto
      * @return {game.Vector} This for chaining
@@ -882,7 +870,7 @@ game.module(
       response.b = b;
       response.overlap = totalRadius - dist;
       response.overlapN.copy(differenceV.normalize());
-      response.overlapV.copy(differenceV).scale(response.overlap);
+      response.overlapV.copy(differenceV).multiply(response.overlap);
       response.aInB = a.shape.radius <= b.shape.radius && dist <= b.shape.radius - a.shape.radius;
       response.bInA = b.shape.radius <= a.shape.radius && dist <= a.shape.radius - b.shape.radius;
     }
@@ -1022,7 +1010,7 @@ game.module(
     if (response) {
       response.a = polygon;
       response.b = circle;
-      response.overlapV.copy(response.overlapN).scale(response.overlap);
+      response.overlapV.copy(response.overlapN).multiply(response.overlap);
     }
     T_VECTORS.push(circlePos);
     T_VECTORS.push(edge);
@@ -1090,7 +1078,7 @@ game.module(
     if (response) {
       response.a = a;
       response.b = b;
-      response.overlapV.copy(response.overlapN).scale(response.overlap);
+      response.overlapV.copy(response.overlapN).multiply(response.overlap);
     }
     return true;
   }
