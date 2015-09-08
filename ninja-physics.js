@@ -1,6 +1,6 @@
 /**
  * NinjaPhysics for LesserPanda engine
- * @version 0.1.1
+ * @version 0.2.0
  * @author Sean Bohan
  */
 game.module(
@@ -11,7 +11,7 @@ game.module(
 )
 .body(function() { 'use strict';
 
-  game.Vector.inject({
+  Object.assign(game.Vector.prototype, {
     /**
      * Change this vector to be perpendicular to what it was before. (Effectively
      * roatates it 90 degrees in a clockwise direction)
@@ -83,25 +83,6 @@ game.module(
       return this;
     },
     /**
-     * Get the squared length of this vector.
-     * @return {Number} The length^2 of this vector
-     */
-    squaredLength: function() {
-      return this.dot();
-    },
-
-    /**
-     * Get the squared distance to another vector.
-     * @param  {game.Vector} vector The target vector.
-     * @return {Numver}             Distance value
-     */
-    squaredDistance: function(vector) {
-      var x = vector.x - this.x;
-      var y = vector.y - this.y;
-      return x * x + y * y;
-    },
-
-    /**
      * Returns positive if vector is clockwise of this vector
      * @return {Number} 1: CW, -1: CCW
      */
@@ -122,17 +103,16 @@ game.module(
   game.Vector.RIGHT = new game.Vector(1, 0);
 
   // TODO: finish polygon related methods
-  game.createClass('Polygon', {
-    points: [],
-    calcPoints: [],
-    edges: [],
-    normals: [],
-    offset: null,
-    _rotation: 0,
-    init: function(points) {
-      this.offset = new game.Vector();
-      this.setPoints(points || []);
-    },
+  function Polygon(points) {
+    this.points = [];
+    this.calcPoints = [];
+    this.edges = [];
+    this.normals = [];
+    this._rotation = 0;
+    this.offset = new game.Vector();
+    this.setPoints(points || []);
+  }
+  Object.assign(Polygon.prototype, {
     /**
      * Set the points of the polygon.
      * @param {Array<game.Vector>=} points An array of vectors representing the points in the polygon,
@@ -240,7 +220,7 @@ game.module(
       return this;
     }
   });
-  Object.defineProperty(game.Polygon.prototype, 'rotation', {
+  Object.defineProperty(Polygon.prototype, 'rotation', {
     get: function() {
       return this._rotation;
     },
@@ -249,8 +229,9 @@ game.module(
       this._recalc();
     }
   });
+  game.Polygon = Polygon;
 
-  game.Rectangle.inject({
+  Object.assign(game.Rectangle.prototype, {
     rotation: 0,
     /**
      * Returns a polygon whose edges are the same as this rectangle.
@@ -266,7 +247,7 @@ game.module(
     }
   });
 
-  game.Circle.inject({
+  Object.assign(game.Circle.prototype, {
     rotation: 0
   });
 
@@ -279,18 +260,16 @@ game.module(
    *   of the overlap)
    * - Whether the first object is entirely inside the second, and vice versa.
    */
-  game.createClass('Response', {
-    a: null,
-    b: null,
-    overlapN: null,
-    overlapV: null,
-    aInB: true,
-    bInA: true,
-    overlap: Number.MAX_VALUE,
-    init: function() {
-      this.overlapN = new game.Vector();
-      this.overlapV = new game.Vector();
-    },
+  function Response() {
+    this.a = null;
+    this.b = null;
+    this.aInB = true;
+    this.bInA = true;
+    this.overlap = Number.MAX_VALUE;
+    this.overlapN = new game.Vector();
+    this.overlapV = new game.Vector();
+  }
+  Object.assign(Response.prototype, {
     /**
      * Set some values of the response back to their defaults.  Call this between tests if
      * you are going to reuse a single Response object for multiple intersection tests (recommented
@@ -304,11 +283,13 @@ game.module(
       return this;
     }
   });
+  game.Response = Response;
 
   /**
    * SAT based collision solver
    */
-  game.createClass('SATSolver', {
+  function SATSolver() {}
+  Object.assign(SATSolver.prototype, {
     /**
      * Hit test a versus b.
      * @method hitTest
@@ -372,8 +353,19 @@ game.module(
       }
     }
   });
+  game.SATSolver = SATSolver;
 
-  game.World.inject({
+  function World(x, y) {
+    x = typeof x === 'number' ? x : 0;
+    y = typeof y === 'number' ? y : 980;
+    this.gravity = new game.Vector(x, y);
+    this.bodies = [];
+    this.solver = new game.SATSolver();
+    // Initial size of the grid is 1x1 in cell
+    this.spatialGrid = new game.SpatialGrid(this.cellSize, this.bodies);
+  }
+  Object.assign(World.prototype, game.World.prototype, {
+    constructor: World,
     /**
      * SpatialGrid for Broad-Phase Collision.
      * @property {Object} spatialGrid
@@ -384,15 +376,6 @@ game.module(
      * @type {Number}
      */
     cellSize: 64,
-
-    init: function(x, y) {
-      x = typeof x === 'number' ? x : 0;
-      y = typeof y === 'number' ? y : 980;
-      this.gravity = new game.Vector(x, y);
-      this.solver = new game.SATSolver();
-      // Initial size of the grid is 1x1 in cell
-      this.spatialGrid = new game.SpatialGrid(this.cellSize, this.bodies);
-    },
 
     /**
      * Add body to world.
@@ -441,23 +424,26 @@ game.module(
       return (bodyA.collideAgainst.indexOf(bodyB.collisionGroup) !== -1);
     }
   });
+  game.World = World;
 
-  game.Body.inject({
-    _id: 0,
-    init: function(settings) {
-      this.super(settings);
-      this._id = game.Body.uid++;
+  var BodyCtor = game.Body;
+  function Body(settings) {
+    BodyCtor.call(this, settings);
+    this._id = game.Body.uid++;
 
-      if (this.shape) {
-        this.shape.body = this;
+    if (this.shape) {
+      this.shape.body = this;
 
-        // Convert Rectangle to Polygon
-        // TODO: remove this after Rectangle vs Rectanvle completed
-        if (this.shape.width) {
-          this.shape = this.shape.toPolygon();
-        }
+      // Convert Rectangle to Polygon
+      // TODO: remove this after Rectangle vs Rectanvle completed
+      if (this.shape.width) {
+        this.shape = this.shape.toPolygon();
       }
-    },
+    }
+  }
+  Object.assign(Body.prototype, game.Body.prototype, {
+    _id: 0,
+    constructor: Body,
     addShape: function(shape) {
       this.shape = shape;
       // Convert Rectangle to Polygon
@@ -478,6 +464,7 @@ game.module(
       this.collisionGroup = group;
     }
   });
+  game.Body = Body;
   game.Body.uid = 0;
 
   Object.defineProperty(game.Body.prototype, 'rotation', {
@@ -489,58 +476,47 @@ game.module(
     }
   });
 
-  game.createClass('SpatialGrid', {
+  function SpatialGrid(cellSize, bodies) {
     /**
      * Grid cell size in pixel
      * @type {Number}
      */
-    pxCellSize: 64,
+    this.pxCellSize = cellSize || 64;
     /**
      * Body list
      * @type {Array}
      */
-    bodies: null,
+    this.bodies = bodies;
     /**
      * Cell matrix
      * @type {Array<Array>}
      */
-    grid: null,
+    this.grid = [[]];
 
     /**
      * Response object for testing reuse
      * @type {game.Response}
      */
-    response: null,
+    this.response = new game.Response();
 
     /**
      * How many collision tests occured within current step
      * @type {Number}
      */
-    collisionTests: 0,
+    this.collisionTests = 0;
     /**
      * How many cells allocated for collision test
      * @type {Number}
      */
-    allocatedCells: 0,
+    this.allocatedCells = 0;
     /**
      * How many collision checking occured within current step
      * @type {Number}
      */
-    hashChecks: 0,
-
-    init: function(cellSize, bodies) {
-      this.bodies = bodies;
-
-      this.pxCellSize = cellSize;
-      this.grid = [[]];
-      this.response = new game.Response();
-
-      // These are purely for reporting purposes
-      this.collisionTests = 0;
-      this.totalCells = 0;
-      this.allocatedCells = 0;
-      this.hashChecks = 0;
-    },
+    this.hashChecks = 0;
+    this.totalCells = 0;
+  };
+  Object.assign(SpatialGrid.prototype, {
     update: function() {
       var cXEntityMin, cXEntityMax, cYEntityMin, cYEntityMax, i, j, body, cX, cY, gridCol, gridCell;
 
@@ -672,6 +648,7 @@ game.module(
       }
     }
   });
+  game.SpatialGrid = SpatialGrid;
 
   // Helper Functions ------------------------------------
 
