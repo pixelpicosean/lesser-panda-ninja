@@ -364,7 +364,7 @@ game.module(
     // Initial size of the grid is 1x1 in cell
     this.spatialGrid = new game.SpatialGrid(this.cellSize, this.bodies);
   }
-  Object.assign(World.prototype, game.World.prototype, {
+  Object.assign(World.prototype, {
     constructor: World,
     /**
      * SpatialGrid for Broad-Phase Collision.
@@ -464,8 +464,8 @@ game.module(
       this.collisionGroup = group;
     }
   });
+  Body.uid = 0;
   game.Body = Body;
-  game.Body.uid = 0;
 
   Object.defineProperty(game.Body.prototype, 'rotation', {
     get: function() {
@@ -612,10 +612,12 @@ game.module(
           // For every object in a cell...
           for (k = 0; k < gridCell.length; k++) {
             bodyA = gridCell[k];
+            if (bodyA._remove) continue;
 
             // For every other object in a cell...
             for (l = k + 1; l < gridCell.length; l++) {
               bodyB = gridCell[l];
+              if (bodyB._remove) continue;
 
               // Skip if they should not collide with each other
               aShouldCollideWithB = shouldCollide(bodyA, bodyB);
