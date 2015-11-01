@@ -10,8 +10,7 @@ Ninja Physics is a physics plugin for LesserPanda engine, and is inspired by [ar
 
 ## Install
 
-Simply download "ninja-physics.js" and put it inside "game/plugins" folder. Don't forget
-to "require" it anywhere you want.
+Simply require the module anywhere you want.
 
 This plugin ONLY changes the implementation and add more features, the API is almost the same of
 official physics module.
@@ -23,24 +22,26 @@ official physics module.
 You can use `Body` and `World` the same as before.
 
 ```javascript
+import core from 'engine/core';
+import physics from 'ninja-physics';
 // Create a body like you've always done
-var circleBody = new game.Body({
+var circleBody = new physics.Body({
   position: { x: 120, y: 120 },
-  shape: new game.Circle(40),
+  shape: new physics.Circle(40),
   mass: 1, // will fall
   collisionGroup: 1,
   collideAgainst: [2]
 });
 
-var rectBody = new game.Body({
+var rectBody = new physics.Body({
   position: { x: 100, y: 100 },
-  shape: new game.Rectangle(40, 40),
+  shape: new physics.Rectangle(40, 40),
   collisionGroup: 2
 });
 
 // Add them to world and it just works
-circleBody.addTo(game.scene.world);
-rectBody.addTo(game.scene.world);
+circleBody.addTo(core.scene.world);
+rectBody.addTo(core.scene.world);
 ```
 
 ### Rotate Body
@@ -49,10 +50,11 @@ Body is not limited to use AABB for collision detection, you can
 rotate it and still get the right behavior.
 
 ```javascript
+import physics from 'ninja-physics';
 // Create a body
-var body = new game.Body({
+var body = new physics.Body({
   position: { x: 100, y: 100 },
-  shape: new game.Rectangle(40, 40)
+  shape: new physics.Rectangle(40, 40)
 });
 
 // Rotate it a little bit (45 degrees)
@@ -65,21 +67,22 @@ There're some utility functions you can use to detect
 body overlapping, which will give you a detailed result.
 
 ```javascript
+import physics from 'ninja-physics';
 // Create 2 circles
-var circle1 = new game.Body({
+var circle1 = new physics.Body({
     position: { x: 0, y: 0 },
-    shape: new game.Circle(20)
+    shape: new physics.Circle(20)
 });
-var circle2 = new game.Body({
+var circle2 = new physics.Body({
     position: { x: 30, y: 0 },
-    shape: new game.Circle(20)
+    shape: new physics.Circle(20)
 });
 
 // Create a response object to receive collision result
-var response = new game.Response();
+var response = new physics.Response();
 
 // Test collision between them
-var collided = game.testCircleCircle(circle1, circle2, response);
+var collided = physics.testCircleCircle(circle1, circle2, response);
 
 collided === true; // The two circles are overlapping
 response.overlap === 10; // There is 10px overlapping between them
@@ -98,6 +101,7 @@ I'm going to use "Breakout" as the example to explain how you can define
 collision groups.
 
 ```javascript
+import physics from 'ninja-physics';
 // It is always recommended to define groups as constants instead of
 // using number directly.
 var GROUPS = {
@@ -113,12 +117,12 @@ var GROUPS = {
 //
 // Which means that it is completely SOLID and
 // sometimes people called it "FIXED".
-var wall = new game.Body({
+var wall = new physics.Body({
   collisionGroup: GROUPS.WALL
 });
 
 // Blocks will collide with ball.
-var block = new game.Body({
+var block = new physics.Body({
   collisionGroup: GROUPS.BLOCK,
   collideAgainst: [GROUPS.BALL],
   collide: function(ball) {
@@ -130,7 +134,7 @@ var block = new game.Body({
   }
 });
 
-var ball = new game.Body({
+var ball = new physics.Body({
   collisionGroup: GROUPS.BALL,
   collideAgainst: [GROUPS.WALL, GROUPS.BLOCK],
   collide: function(other, response) {
@@ -142,7 +146,7 @@ var ball = new game.Body({
   }
 });
 
-var paddle = new game.Body({
+var paddle = new physics.Body({
   collisionGroup: GROUPS.PADDLE,
   collideAgainst: [GROUPS.BALL],
   collide: function(ball, response) {
@@ -163,11 +167,12 @@ There is a new `Polygon` shape added, and `Rectangle` shape
 will be automatically converted to a `Polygon`.
 
 ```javascript
+import physics from 'ninja-physics';
 /**
  * @constructor
  * points {Array} points Array of vectors representing the original points of the polygon.
  */
-var polygon = new game.Polygon(points);
+var polygon = new physics.Polygon(points);
 
 /**
  * Set the current rotation (in radians).
@@ -183,20 +188,21 @@ result from collision testing functions. The `collide` method
 of `Body` will also receive a result as second parameter.
 
 ```javascript
+import physics from 'ninja-physics';
 /**
  * @constructor
  */
-var response = new game.Response();
+var response = new physics.Response();
 
 /**
  * The first object in the collision.
- * @property {game.Body}
+ * @property {Body}
  */
 response.a;
 
 /**
  * The second object in the collison.
- * @property {game.Body}
+ * @property {Body}
  */
 response.b;
 
@@ -208,14 +214,14 @@ response.overlap;
 
 /**
  * The shortest colliding axis (unit-vector)
- * @property {game.Vector}
+ * @property {Vector}
  */
 response.overlapN;
 
 /**
  * The overlap vector (i.e. overlapN.scale(overlap, overlap)).
  * If this vector is subtracted from the position of a, a and b will no longer be colliding.
- * @property {game.Vector}
+ * @property {Vector}
  */
 response.overlapV;
 
@@ -243,60 +249,60 @@ response.clear();
 ```javascript
 /**
  * Check if a point is inside a circle.
- * @param {game.Vector} p The point to test
- * @param {game.Circle} c The circle to test
+ * @param {Vector} p The point to test
+ * @param {Circle} c The circle to test
  * @return {Boolean} true if the point is inside the circle, false if it is not
  */
-game.pointInCircle(p, c)
+pointInCircle(p, c)
 
 /**
  * Check if a point is inside a convex polygon.
- * @param {game.Vector} p The point to test
- * @param {game.Polygon} poly The polygon to test
+ * @param {Vector} p The point to test
+ * @param {Polygon} poly The polygon to test
  * @return {Boolean} true if the point is inside the polygon, false if it is not
  */
-game.pointInPolygon(p, poly)
+pointInPolygon(p, poly)
 
 /**
  * Check if two circles collide.
- * @param {game.Body} a The first circle body
- * @param {game.Body} b The second circle body
- * @param {game.Response=} response Response object (optional) that will be populated if
+ * @param {Body} a The first circle body
+ * @param {Body} b The second circle body
+ * @param {Response=} response Response object (optional) that will be populated if
  *   the circles intersect
  * @return {Boolean} true if the circles intersect, false if they don't
  */
-game.testCircleCircle(a, b, response)
+testCircleCircle(a, b, response)
 
 /**
  * Check if a polygon and a circle collide.
- * @param {game.Polygon} polygon The polygon
- * @param {game.Circle} circle The circle
- * @param {game.Response=} response Response object (optional) that will be populated if
+ * @param {Polygon} polygon The polygon
+ * @param {Circle} circle The circle
+ * @param {Response=} response Response object (optional) that will be populated if
  *   they interset
  * @return {Boolean} true if they intersect, false if they don't
  */
-game.testPolygonCircle(polygon, circle, response)
+testPolygonCircle(polygon, circle, response)
 
 /**
  * Check if a circle and a polygon collide.
  *
- * @param {game.Circle} circle The circle
- * @param {game.Polygon} polygon The polygon
- * @param {game.Response=} response Response object (optional) that will be populated if
+ * @param {Circle} circle The circle
+ * @param {Polygon} polygon The polygon
+ * @param {Response=} response Response object (optional) that will be populated if
  *   they interset
  * @return {Boolean} true if they intersect, false if they don't
  */
-game.testCirclePolygon(circle, polygon, response)
+testCirclePolygon(circle, polygon, response)
 
 /**
  * Checks whether polygons collide.
- * @param {game.Polygon} a The first polygon
- * @param {game.Polygon} b The second polygon
- * @param {game.Response=} response Response object (optional) that will be populated if
+ * @param {Polygon} a The first polygon
+ * @param {Polygon} b The second polygon
+ * @param {Response=} response Response object (optional) that will be populated if
  *   they interset
  * @return {Boolean} true if they intersect, false if they don't
  */
-game.testPolygonPolygon(a, b, response)
+testPolygonPolygon(a, b, response)
 ```
 
 ## ChangeLog
