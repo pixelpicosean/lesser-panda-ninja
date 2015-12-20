@@ -1,6 +1,6 @@
 # Ninja Physics
 
-Ninja Physics is a physics plugin for LesserPanda engine, and is inspired by [articles](http://www.metanetsoftware.com/technique/tutorialA.html) of Metanet Software.
+Ninja Physics is an advanced physics module for lesser-panda engine, and is inspired by [articles](http://www.metanetsoftware.com/technique/tutorialA.html) of Metanet Software.
 
 ## Features
 
