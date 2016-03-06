@@ -96,23 +96,24 @@ Vector.LEFT = new Vector(-1, 0);
 Vector.RIGHT = new Vector(1, 0);
 
 // TODO: finish polygon related methods
-function Polygon(points) {
-  this.points = [];
-  this.calcPoints = [];
-  this.edges = [];
-  this.normals = [];
-  this._rotation = 0;
-  this.offset = new Vector();
-  this.setPoints(points || []);
-}
-Object.assign(Polygon.prototype, {
+class Polygon {
+  constructor(points = []) {
+    this.points = [];
+    this.calcPoints = [];
+    this.edges = [];
+    this.normals = [];
+    this._rotation = 0;
+    this.offset = new Vector();
+    this.setPoints(points);
+  }
+
   /**
    * Set the points of the polygon.
    * @param {Array<Vector>=} points An array of vectors representing the points in the polygon,
    *   in clockwise order
    * @return {Polygon} This for chaining
    */
-  setPoints: function setPoints(points) {
+  setPoints(points) {
     // Only re-allocate if this is a new polygon or the number of points has changed.
     var lengthChanged = !this.points || this.points.length !== points.length;
     if (lengthChanged) {
@@ -129,30 +130,30 @@ Object.assign(Polygon.prototype, {
     this.points = points;
     this._recalc();
     return this;
-  },
+  }
   /**
    * Set the current offset to apply to the `points` before applying the `rotation` rotation.
    * @param {Vector} offset The new offset vector
    * @return {Polygon} This for chaining
    */
-  setOffset: function setOffset(offset) {
+  setOffset(offset) {
     this.offset = offset;
     this._recalc();
     return this;
-  },
+  }
   /**Rotates this polygon counter-clockwise around the origin of *its local coordinate system* (i.e. `pos`).
    * Note: This changes the **original** points (so any `rotation` will be applied on top of this rotation).
    * @param {Number} rotation The rotation to rotate (in radians)
    * @return {Polygon} This for chaining
    */
-  rotate: function rotate(rotation) {
+  rotate(rotation) {
     var points = this.points;
     for (var i = 0, len = points.length; i < len; i++) {
       points[i].rotate(rotation);
     }
     this._recalc();
     return this;
-  },
+  }
   /**
    * Translates the points of this polygon by a specified amount relative to the origin of *its own coordinate
    * system* (i.e. `body.position`)
@@ -163,7 +164,7 @@ Object.assign(Polygon.prototype, {
    * @param {Number} y The vertical amount to translate
    * @return {Polygon} This for chaining
    */
-  translate: function translate(x, y) {
+  translate(x, y) {
     var points = this.points;
     for (var i = 0, len = points.length; i < len; i++) {
       points[i].x += x;
@@ -171,13 +172,13 @@ Object.assign(Polygon.prototype, {
     }
     this._recalc();
     return this;
-  },
+  }
   /**
    * Computes the calculated collision polygon. Applies the `rotation` and `offset` to the original points then recalculates the
    * edges and normals of the collision polygon.
    * @return {Polygon} This for chaining
    */
-  _recalc: function _recalc() {
+  _recalc() {
     // Calculated points - this is what is used for underlying collisions and takes into account
     // the rotation/offset set on the polygon.
     var calcPoints = this.calcPoints;
@@ -211,8 +212,8 @@ Object.assign(Polygon.prototype, {
       normals[i].copy(e).perp().normalize();
     }
     return this;
-  },
-});
+  }
+};
 Object.defineProperty(Polygon.prototype, 'rotation', {
   get: function() {
     return this._rotation;
@@ -252,35 +253,34 @@ Object.assign(Circle.prototype, {
  *   of the overlap)
  * - Whether the first object is entirely inside the second, and vice versa.
  */
-function Response() {
-  this.a = null;
-  this.b = null;
-  this.aInB = true;
-  this.bInA = true;
-  this.overlap = Number.MAX_VALUE;
-  this.overlapN = new Vector();
-  this.overlapV = new Vector();
-}
-Object.assign(Response.prototype, {
+class Response {
+  constructor() {
+    this.a = null;
+    this.b = null;
+    this.aInB = true;
+    this.bInA = true;
+    this.overlap = Number.MAX_VALUE;
+    this.overlapN = new Vector();
+    this.overlapV = new Vector();
+  }
   /**
    * Set some values of the response back to their defaults.  Call this between tests if
    * you are going to reuse a single Response object for multiple intersection tests (recommented
    * as it will avoid allcating extra memory)
    * @return {Response} This for chaining
    */
-  clear: function clear() {
+  clear() {
     this.aInB = true;
     this.bInA = true;
     this.overlap = Number.MAX_VALUE;
     return this;
-  },
-});
+  }
+};
 
 /**
  * SAT based collision solver
  */
-function SATSolver() {}
-Object.assign(SATSolver.prototype, {
+class SATSolver {
   /**
    * Hit test a versus b.
    * @method hitTest
@@ -288,7 +288,7 @@ Object.assign(SATSolver.prototype, {
    * @param {Body} b
    * @return {Boolean} return true, if bodies hit.
    */
-  hitTest: function hitTest(a, b, response) {
+  hitTest(a, b, response) {
     // Polygon vs polygon
     if (a.shape.points && b.shape.points) {
       return testPolygonPolygon(a, b, response);
@@ -305,8 +305,8 @@ Object.assign(SATSolver.prototype, {
 
     throw 'Hit test should not go so far!';
     return false;
-  },
-  hitResponse: function hitResponse(a, b, AvsB, BvsA, response) {
+  }
+  hitResponse(a, b, AvsB, BvsA, response) {
     // Make sure a and b are not reversed
     var uniqueA = (a === response.a ? a : b),
       uniqueB = (b === response.b ? b : a);
@@ -342,60 +342,59 @@ Object.assign(SATSolver.prototype, {
       uniqueA.afterCollide(uniqueB);
       uniqueB.afterCollide(uniqueA);
     }
-  },
-});
+  }
+};
 
-function World(x, y) {
-  x = typeof x === 'number' ? x : 0;
-  y = typeof y === 'number' ? y : 980;
-  this.gravity = new Vector(x, y);
-  this.bodies = [];
-  this.solver = new SATSolver();
-  // Initial size of the grid is 1x1 in cell
-  this.spatialGrid = new SpatialGrid(this.cellSize, this.bodies);
-}
-Object.assign(World.prototype, {
-  constructor: World,
-  /**
-   * SpatialGrid for Broad-Phase Collision.
-   * @property {Object} spatialGrid
-   */
-  spatialGrid: null,
-  /**
-   * Cell size of spatial grids
-   * @type {Number}
-   */
-  cellSize: 64,
+class World {
+  constructor(x, y) {
+    x = typeof x === 'number' ? x : 0;
+    y = typeof y === 'number' ? y : 980;
+    this.gravity = new Vector(x, y);
+    this.bodies = [];
+    this.solver = new SATSolver();
+
+    /**
+     * SpatialGrid for Broad-Phase Collision.
+     * @property {Object} spatialGrid
+     */
+    this.spatialGrid = new SpatialGrid(this.cellSize, this.bodies);
+
+    /**
+     * Cell size of spatial grids
+     * @type {Number}
+     */
+    this.cellSize = 64;
+  }
 
   /**
    * Add body to world.
    * @method addBody
    * @param {Body} body
    */
-  addBody: function(body) {
+  addBody(body) {
     body.world = this;
     body._remove = false;
     this.bodies.push(body);
-  },
+  }
 
   /**
    * Remove body from world.
    * @method removeBody
    *  @param {Body} body
    */
-  removeBody: function(body) {
+  removeBody(body) {
     if (!body.world) return;
     body.world = null;
     body._remove = true;
-  },
+  }
+
+  preUpdate() {}
 
   /**
    * Update physics world.
    *  @method update
    */
-  update: function() {
-    let delta = Timer.delta / 1000;
-
+  update(delta) {
     var i, j, bodies = this.spatialGrid.bodies;
     for (i = bodies.length - 1; i >= 0; i--) {
       if (bodies[i]._remove) {
@@ -407,30 +406,28 @@ Object.assign(World.prototype, {
     }
     this.spatialGrid.update();
     this.spatialGrid.handleCollision(this.solver, this.bodyShouldCollideWithBody);
-  },
-  bodyShouldCollideWithBody: function(bodyA, bodyB) {
+  }
+  bodyShouldCollideWithBody(bodyA, bodyB) {
     return (bodyA.collideAgainst.indexOf(bodyB.collisionGroup) !== -1);
-  },
-});
+  }
+};
 
-function Body(settings) {
-  BaseBody.call(this, settings);
-  this._id = Body.uid++;
+class Body extends BaseBody {
+  constructor(settings) {
+    super(settings);
+    this._id = Body.uid++;
 
-  if (this.shape) {
-    this.shape.body = this;
+    if (this.shape) {
+      this.shape.body = this;
 
-    // Convert Rectangle to Polygon
-    // TODO: remove this after Rectangle vs Rectanvle completed
-    if (this.shape.width) {
-      this.shape = this.shape.toPolygon();
+      // Convert Rectangle to Polygon
+      // TODO: remove this after Rectangle vs Rectanvle completed
+      if (this.shape.width) {
+        this.shape = this.shape.toPolygon();
+      }
     }
   }
-}
-Object.assign(Body.prototype, BaseBody.prototype, {
-  _id: 0,
-  constructor: Body,
-  addShape: function(shape) {
+  addShape(shape) {
     this.shape = shape;
     // Convert Rectangle to Polygon
     // TODO: remove this after Rectangle vs Rectanvle completed
@@ -440,16 +437,16 @@ Object.assign(Body.prototype, BaseBody.prototype, {
 
     shape.body = this;
     return this;
-  },
+  }
   /**
     Set new collision group for body.
     @method setCollisionGroup
     @param {Number} group
   **/
-  setCollisionGroup: function(group) {
+  setCollisionGroup(group) {
     this.collisionGroup = group;
-  },
-});
+  }
+};
 Body.uid = 0;
 
 Object.defineProperty(Body.prototype, 'rotation', {
@@ -461,48 +458,49 @@ Object.defineProperty(Body.prototype, 'rotation', {
   },
 });
 
-function SpatialGrid(cellSize, bodies) {
-  /**
-   * Grid cell size in pixel
-   * @type {Number}
-   */
-  this.pxCellSize = cellSize || 64;
-  /**
-   * Body list
-   * @type {Array}
-   */
-  this.bodies = bodies;
-  /**
-   * Cell matrix
-   * @type {Array<Array>}
-   */
-  this.grid = [[]];
+class SpatialGrid {
+  constructor(cellSize, bodies) {
+    /**
+     * Grid cell size in pixel
+     * @type {Number}
+     */
+    this.pxCellSize = cellSize || 64;
+    /**
+     * Body list
+     * @type {Array}
+     */
+    this.bodies = bodies;
+    /**
+     * Cell matrix
+     * @type {Array<Array>}
+     */
+    this.grid = [[]];
 
-  /**
-   * Response object for testing reuse
-   * @type {Response}
-   */
-  this.response = new Response();
+    /**
+     * Response object for testing reuse
+     * @type {Response}
+     */
+    this.response = new Response();
 
-  /**
-   * How many collision tests occured within current step
-   * @type {Number}
-   */
-  this.collisionTests = 0;
-  /**
-   * How many cells allocated for collision test
-   * @type {Number}
-   */
-  this.allocatedCells = 0;
-  /**
-   * How many collision checking occured within current step
-   * @type {Number}
-   */
-  this.hashChecks = 0;
-  this.totalCells = 0;
-};
-Object.assign(SpatialGrid.prototype, {
-  update: function() {
+    /**
+     * How many collision tests occured within current step
+     * @type {Number}
+     */
+    this.collisionTests = 0;
+    /**
+     * How many cells allocated for collision test
+     * @type {Number}
+     */
+    this.allocatedCells = 0;
+    /**
+     * How many collision checking occured within current step
+     * @type {Number}
+     */
+    this.hashChecks = 0;
+    this.totalCells = 0;
+  }
+
+  update() {
     var cXEntityMin, cXEntityMax, cYEntityMin, cYEntityMax, i, j, body, cX, cY, gridCol, gridCell;
 
     this.allocatedCells = 0;
@@ -566,9 +564,9 @@ Object.assign(SpatialGrid.prototype, {
         }
       }
     }
-  },
+  }
 
-  handleCollision: function(solver, shouldCollide) {
+  handleCollision(solver, shouldCollide) {
     var checked = Object.create(null),
       bodyA, bodyB, hashA, hashB, i, j, k, l, coIdx, gridCol, gridCell,
       aShouldCollideWithB = false, bShouldCollideWithA = false;
@@ -633,8 +631,8 @@ Object.assign(SpatialGrid.prototype, {
         }
       }
     }
-  },
-});
+  }
+};
 
 // Helper Functions ------------------------------------
 
@@ -1079,16 +1077,16 @@ var UNIT_SQUARE = new Body({
   shape: new Rectangle(1, 1).toPolygon(),
 });
 
-// Inject to Scene class
-Object.assign(Scene.prototype, {
-  _initPhysics: function _initPhysics() {
-    this.world = new World();
+// Register as sub-system
+Scene.registerSystem('Physics', {
+  init: function init(scene) {
+    scene.world = new World();
   },
-  _updatePhysics: function _updatePhysics() {
-    this.world.update();
+  preUpdate: function preUpdate(scene, delta) {
+    scene.world.preUpdate(delta * 0.001);
   },
-  _freezePhysics: function _freezePhysics() {
-    this.world.bodies.length = 0;
+  update: function update(scene, delta) {
+    scene.world.update(delta * 0.001);
   },
 });
 
